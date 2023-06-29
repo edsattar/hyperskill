@@ -1,4 +1,4 @@
-import operator
+import argparse
 import logging
 import sys
 import random
@@ -7,7 +7,9 @@ import io
 
 
 class FlashcardApp:
-    def __init__(self):
+    def __init__(self, import_file_path=None, export_file_path=None):
+        self.import_file_path = import_file_path
+        self.export_file_path = export_file_path
         self.actions = {
             "add": self.add_card,
             "remove": self.remove_card,
@@ -38,6 +40,9 @@ class FlashcardApp:
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.INFO)
 
+        if self.import_file_path is not None:
+            self.import_cards(self.import_file_path)
+
     def action_menu(self) -> None:
         action_input = self.log_input(
             f"Input the action ({', '.join(self.actions.keys())}):"
@@ -51,6 +56,8 @@ class FlashcardApp:
                 f"Input the action ({', '.join(self.actions.keys())}):"
             )
         else:
+            if self.export_file_path is not None:
+                self.export_cards(self.export_file_path)
             self.logger.info("Bye bye!")
             self.log.close()
 
@@ -79,8 +86,10 @@ class FlashcardApp:
             self.logger.info("The card has been removed.")
             print("The card has been removed.", file=self.log)
 
-    def import_cards(self):
-        file_path = self.log_input("File name:")
+    def import_cards(self, file_path=None):
+        if file_path is None:
+            file_path = self.log_input("File name:")
+
         try:
             with open(file_path, "r") as f:
                 cards = json.loads(f.read())
@@ -89,8 +98,9 @@ class FlashcardApp:
         except FileNotFoundError:
             self.logger.info("File not found.")
 
-    def export_cards(self):
-        file_path = self.log_input("File name:")
+    def export_cards(self, file_path=None):
+        if file_path is None:
+            file_path = self.log_input("File name:")
         n = len(self.cards)
         with open(file_path, "w+") as f:
             json.dump(self.cards, f)
@@ -165,7 +175,12 @@ class FlashcardApp:
 
 
 def main() -> None:
-    app = FlashcardApp()
+    parser = argparse.ArgumentParser(description="Flashcard app")
+    parser.add_argument("-i", "--import_from", type=str, help="import file path")
+    parser.add_argument("-e", "--export_to", type=str, help="export file path")
+    parser.add_argument("-l", "--log", type=str, help="log file path")
+    args = parser.parse_args()
+    app = FlashcardApp(args.import_from, args.export_to)
     app.action_menu()
 
 
