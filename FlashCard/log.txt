@@ -1,0 +1,47 @@
+Input the action (add, remove, import, export, ask, exit, log, hardest card, reset stats):
+> import
+File name:
+> e.json
+32 cards have been loaded
+Input the action (add, remove, import, export, ask, exit, log, hardest card, reset stats):
+> ask
+How many times to ask?
+> 5
+Print the definition of "Mn"
+> m
+Wrong. The right answer is "Manganese".
+Print the definition of "Au"
+> m
+Wrong. The right answer is "Gold".
+Print the definition of "Mg"
+> m
+Wrong. The right answer is "Magnesium".
+Print the definition of "Li"
+> m
+Wrong. The right answer is "Lithium".
+Print the definition of "B"
+> m
+Wrong. The right answer is "Boron".
+Input the action (add, remove, import, export, ask, exit, log, hardest card, reset stats):
+> ask
+How many times to ask?
+> 5
+Print the definition of "N"
+> t
+Wrong. The right answer is "Nitrogen".
+Print the definition of "Ga"
+> t
+Wrong. The right answer is "Gallium".
+Print the definition of "O"
+> t
+Wrong. The right answer is "Oxygen".
+Print the definition of "Ne"
+> t
+Wrong. The right answer is "Neon".
+Print the definition of "N"
+> t
+Wrong. The right answer is "Nitrogen".
+Input the action (add, remove, import, export, ask, exit, log, hardest card, reset stats):
+> log
+File name:
+> log.txt

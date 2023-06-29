@@ -1,5 +1,9 @@
+import operator
+import logging
+import sys
 import random
 import json
+import io
 
 
 class FlashcardApp:
@@ -11,71 +15,153 @@ class FlashcardApp:
             "export": self.export_cards,
             "ask": self.ask,
             "exit": None,
+            "log": self.save_log,
+            "hardest card": self.hardest_card,
+            "reset stats": self.reset_stats,
         }
+        self.log = io.StringIO()
         self.cards = {}
+        self.errors = {}
+
+        formatter = logging.Formatter("%(message)s")
+        ch = logging.StreamHandler(sys.stdout)
+        ch.setLevel(logging.INFO)
+        ch.setFormatter(formatter)
+        ih = logging.StreamHandler(self.log)
+        ih.setLevel(logging.DEBUG)
+        ih.setFormatter(formatter)
+        # self.logger.addHandler(ch)
+        # self.logger.addHandler(ih)
+
+        trackers = ch, ih
+        logging.basicConfig(handlers=trackers)
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.INFO)
 
     def action_menu(self) -> None:
-        action_input = input(f"Input the action ({', '.join(self.actions.keys())}):\n")
-        if action_input in self.actions:
-            while action_input != "exit":
+        action_input = self.log_input(
+            f"Input the action ({', '.join(self.actions.keys())}):"
+        )
+        while action_input != "exit":
+            try:
                 self.actions[action_input]()
-                action_input = input(
-                    f"Input the action ({', '.join(self.actions.keys())}):\n"
-                )
-            else:
-                print("Bye bye!")
+            except KeyError:
+                self.logger.error(f'"{action_input}" is not a valid action')
+            action_input = self.log_input(
+                f"Input the action ({', '.join(self.actions.keys())}):"
+            )
+        else:
+            self.logger.info("Bye bye!")
+            self.log.close()
 
     def add_card(self):
-        term = input("The card:\n")
+        term = self.log_input("The card:")
         while term in self.cards.keys():
-            term = input(f'The term "{term}" already exists. Try again:\n')
+            term = self.log_input(f'The term "{term}" already exists. Try again:')
 
-        defn = input("The definition of the card:\n")
+        defn = self.log_input("The definition of the card:")
         while defn in self.cards.values():
-            defn = input(f'The definition "{defn}" already exists. Try again:\n')
+            defn = self.log_input(f'The definition "{defn}" already exists. Try again:')
 
         self.cards[term] = defn
 
+        # self.logger.info(f'The pair ("{term}":"{defn}") has been added.')
         print(f'The pair ("{term}":"{defn}") has been added.')
+        print(f'The pair ("{term}":"{defn}") has been added.', file=self.log)
 
     def remove_card(self):
-        term = input("Which card:\n")
-        try:
-            self.cards.pop(term)
-        except KeyError:
-            print(f"Can't remove {term}: there is no such card.")
+        term = self.log_input("Which card:")
+        if term not in self.cards.keys():
+            self.logger.info(f"Can't remove {term}: there is no such card.")
+            print(f"Can't remove {term}: there is no such card.", file=self.log)
         else:
-            print("The card has been removed.")
+            self.cards.pop(term)
+            self.logger.info("The card has been removed.")
+            print("The card has been removed.", file=self.log)
 
     def import_cards(self):
-        file_path = input("File name:\n")
+        file_path = self.log_input("File name:")
         try:
             with open(file_path, "r") as f:
                 cards = json.loads(f.read())
-                print(f"{len(cards)} cards have been loaded")
+                self.logger.info(f"{len(cards)} cards have been loaded")
                 self.cards.update(cards)
         except FileNotFoundError:
-            print("File not found.")
+            self.logger.info("File not found.")
 
     def export_cards(self):
-        file_path = input("File name:\n")
+        file_path = self.log_input("File name:")
+        n = len(self.cards)
         with open(file_path, "w+") as f:
             json.dump(self.cards, f)
-        print(f"{len(self.cards)} cards have been saved")
+        self.logger.info(f"{n} cards have been saved")
+        print(f"{n} cards have been saved", file=self.log)
 
     def ask(self):
-        n = int(input("How many times to ask?\n"))
+        if len(self.cards) == 0:
+            self.logger.warning("No cards added yet")
+            return
+
+        n = int(self.log_input("How many times to ask?"))
         for _ in range(n):
             term = random.choice(sorted(self.cards))
-            ans = input(f'Print the definition of "{term}"\n')
+            ans = self.log_input(f'Print the definition of "{term}"')
             if ans == self.cards[term]:
-                print("Correct!")
+                self.logger.info("Correct!")
             else:
+                if term in self.errors:
+                    self.errors[term] += 1
+                else:
+                    self.errors[term] = 1
                 response = f'Wrong. The right answer is "{self.cards[term]}".'
                 for key, val in self.cards.items():
                     if ans == val:
                         response = f'Wrong. The right answer is "{self.cards[term]}", but your definition is correct for "{key}"'
-                print(response)
+                self.logger.info(response)
+                print(response, file=self.log)
+
+    def log_input(self, message):
+        print(message)
+        print(message, file=self.log)
+        # self.logger.info(message)
+        user_input = input()
+        # self.logger.debug(user_input)
+        self.log.write(user_input + "\n")
+
+        return user_input
+
+    def save_log(self) -> None:
+        file_path = self.log_input("File name:")
+        with open(file_path, "w+") as f:
+            f.write(self.log.getvalue())
+        self.logger.info("The log has been saved.")
+
+    def reset_stats(self) -> None:
+        self.errors.clear()
+        self.logger.info("Card statistics have been reset.")
+
+    def hardest_card(self) -> None:
+        # print(self.errors)
+        max_error = 1
+        hardest_cards: list[str] = []
+        delimiter = '", "'
+        for key, val in self.errors.items():
+            if val > max_error:
+                hardest_cards = [key]
+                max_error = val
+            elif val == max_error:
+                hardest_cards.append(key)
+
+        if len(hardest_cards) > 1:
+            self.logger.info(
+                f'The hardest cards are "{delimiter.join(hardest_cards)}". You have {max_error} errors answering them.'
+            )
+        elif len(hardest_cards) == 1:
+            self.logger.info(
+                f'The hardest card is "{hardest_cards[0]}". You have {max_error} errors answering it.'
+            )
+        else:
+            self.logger.info("There are no cards with errors.")
 
 
 def main() -> None:
