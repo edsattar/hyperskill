@@ -24,7 +24,9 @@ def stage3():
 def stage4():
     usr_input1 = "-2 + 4 - 5 + 6"
     usr_input2 = "9 +++ 10 -- 8"
-    print(list(usr_input2.split()))
+    data = usr_input2.split()
+    print(data)
+    print(list(map(isnumeric, data))) 
 
 
 def main():
