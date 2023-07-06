@@ -1,7 +1,3 @@
-class InvalidExpressionError(Exception):
-    pass
-
-
 class CalculatorError(Exception):
     def __init__(self, message):
         self.message = message
@@ -10,44 +6,31 @@ class CalculatorError(Exception):
         return self.message
 
 
-# def any_digit(string: str) -> bool:
-#     return any(map(str.isdigit, string))
-#
-#
-# def simplify_operator(operators: str) -> str:
-#     return "-" if operators.count("-") % 2 == 1 else "+"
-#
-#
-# def valid_operator(string: str) -> bool:
-#     return bool(string) and all(map(lambda x: x in "+-", string))
-#
-#
-# def processed_int(data: str | int) -> int:
-#     try:
-#         return int(data)
-#     except ValueError:
-#         raise CalculatorError("Invalid expression")
-#
-#
-# def valid_expression(left, op, right) -> bool:
-#     return all((processed_int(left), valid_operator(op), processed_int(right)))
-
-
 class Calculator:
     def __init__(self) -> None:
         self.assignments: dict[str, int] = dict()
         self.answer: int = 0
 
-    @staticmethod
-    def processed_int(data: str | int) -> int:
+    def validated_assignment(self, x: str) -> int:
         try:
-            return int(data)
+            return int(x)
         except ValueError:
-            raise CalculatorError("Invalid expression")
+            if not x.lstrip("-").isalpha():
+                raise CalculatorError("Invalid assignment")
+            else:
+                if x not in self.assignments:
+                    raise CalculatorError(f"Unknown variable {x}")
+                elif x.startswith("-"):
+                    return -self.assignments[x]
+                else:
+                    return self.assignments[x]
 
     @staticmethod
-    def valid_identifier(x):
-        return x.isalpha()
+    def validated_identifier(x: str) -> str:
+        if x.isalpha():
+            return x
+        else:
+            raise CalculatorError("Invalid identifier")
 
     @staticmethod
     def valid_operator(string: str) -> bool:
@@ -73,18 +56,17 @@ class Calculator:
                     return self.assignments[x]
 
     def process_assignment(self, line: str):
+        operands = line.replace(" ", "").split("=")
+        if len(operands) > 2:
+            raise CalculatorError("Invalid assignment")
         key, value = line.replace(" ", "").split("=")
-        if self.valid_identifier(key):
-            self.assignments[key] = int(value)
+        self.assignments[self.validated_identifier(key)] = self.validated_assignment(value)
 
     def evaluate_expression(self, line):
         expression = line.split()
 
         if len(expression) == 1:
-            if self.valid_identifier(expression[0]):
-                expression[0] = self.processed_operand(expression[0])
-            else:
-                raise CalculatorError("Invalid identifier")
+            expression[0] = self.processed_operand(self.validated_identifier(expression[0]))
 
         elif len(expression) == 2:
             expression.insert(0, "0")
@@ -184,7 +166,10 @@ def stage5():
                 expression = usr_input.split()
 
                 if len(expression) == 1:
-                    expression[0] = cal.processed_int(expression[0])
+                    try:
+                        expression[0] = int(expression[0])
+                    except ValueError:
+                        raise CalculatorError("Invalid expression")
 
                 if len(expression) == 2:
                     expression.insert(0, "0")
@@ -230,7 +215,7 @@ def stage6():
 
 
 def main():
-    stage4()
+    stage6()
 
 
 if __name__ == "__main__":
