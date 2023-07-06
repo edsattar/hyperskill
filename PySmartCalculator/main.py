@@ -53,9 +53,8 @@ class Calculator:
     def valid_operator(string: str) -> bool:
         return bool(string) and all(map(lambda x: x in "+-", string))
 
-    @staticmethod
-    def simplified_operator(operator: str) -> str:
-        if not valid_operator(operator):
+    def simplified_operator(self, operator: str) -> str:
+        if not self.valid_operator(operator):
             raise CalculatorError("Invalid expression")
         return "-" if operator.count("-") % 2 == 1 else "+"
 
@@ -192,9 +191,9 @@ def stage5():
 
                 while len(expression) > 2:
 
-                    operand_left = cal.processed_int(expression[0])
+                    operand_left = cal.processed_int(expression.pop(0))
                     operator = cal.simplified_operator(expression.pop(0))
-                    operand_right = cal.processed_int(expression[0])
+                    operand_right = cal.processed_int(expression.pop(0))
 
                     if operator == "-":
                         operand_right = -operand_right
@@ -231,7 +230,7 @@ def stage6():
 
 
 def main():
-    stage5()
+    stage6()
 
 
 if __name__ == "__main__":
