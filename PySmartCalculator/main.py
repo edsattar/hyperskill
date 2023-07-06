@@ -10,27 +10,27 @@ class CalculatorError(Exception):
         return self.message
 
 
-def any_digit(string: str) -> bool:
-    return any(map(str.isdigit, string))
-
-
-def simplify_operator(operators: str) -> str:
-    return "-" if operators.count("-") % 2 == 1 else "+"
-
-
-def valid_operator(string: str) -> bool:
-    return bool(string) and all(map(lambda x: x in "+-", string))
-
-
-def processed_int(data: str | int) -> int:
-    try:
-        return int(data)
-    except ValueError:
-        raise CalculatorError("Invalid expression")
-
-
-def valid_expression(left, op, right) -> bool:
-    return all((processed_int(left), valid_operator(op), processed_int(right)))
+# def any_digit(string: str) -> bool:
+#     return any(map(str.isdigit, string))
+#
+#
+# def simplify_operator(operators: str) -> str:
+#     return "-" if operators.count("-") % 2 == 1 else "+"
+#
+#
+# def valid_operator(string: str) -> bool:
+#     return bool(string) and all(map(lambda x: x in "+-", string))
+#
+#
+# def processed_int(data: str | int) -> int:
+#     try:
+#         return int(data)
+#     except ValueError:
+#         raise CalculatorError("Invalid expression")
+#
+#
+# def valid_expression(left, op, right) -> bool:
+#     return all((processed_int(left), valid_operator(op), processed_int(right)))
 
 
 class Calculator:
@@ -152,8 +152,8 @@ def stage4():
 
             while len(expression) > 2:
                 operand_left = int(expression.pop(0))
-
-                if simplify_operator(expression.pop(0)) == "-":
+                operator = "-" if expression.pop(0).count("-") % 2 == 1 else "+"
+                if operator == "-":
                     operand_right = -int(expression.pop(0))
 
                 else:
@@ -230,7 +230,7 @@ def stage6():
 
 
 def main():
-    stage6()
+    stage4()
 
 
 if __name__ == "__main__":
