@@ -22,40 +22,85 @@ def valid_operator(string: str) -> bool:
     return bool(string) and all(map(lambda x: x in "+-", string))
 
 
-def valid_operand(data: str | int) -> bool:
+def processed_int(data: str | int) -> int:
     try:
-        int(data)
+        return int(data)
     except ValueError:
-        return False
-    return True
+        raise CalculatorError("Invalid expression")
 
 
 def valid_expression(left, op, right) -> bool:
-    return all((valid_operand(left), valid_operator(op), valid_operand(right)))
+    return all((processed_int(left), valid_operator(op), processed_int(right)))
 
 
 class Calculator:
-    def __init__(self):
-        self.assignments = dict()
+    def __init__(self) -> None:
+        self.assignments: dict[str, int] = dict()
+        self.answer: int = 0
 
-    def valid_operand(self, data: str | int) -> bool:
+    @staticmethod
+    def processed_int(data: str | int) -> int:
         try:
-            int(data)
+            return int(data)
         except ValueError:
-            return False
-        return True
+            raise CalculatorError("Invalid expression")
 
-    def process_operand(self, x):
+    @staticmethod
+    def valid_identifier(x):
+        return x.isalpha()
+
+    @staticmethod
+    def valid_operator(string: str) -> bool:
+        return bool(string) and all(map(lambda x: x in "+-", string))
+
+    @staticmethod
+    def simplified_operator(operator: str) -> str:
+        if not valid_operator(operator):
+            raise CalculatorError("Invalid expression")
+        return "-" if operator.count("-") % 2 == 1 else "+"
+
+    def processed_operand(self, x: str) -> int:
         try:
             return int(x)
         except ValueError:
             if not x.lstrip("-").isalpha():
-                raise CalculatorError
+                raise CalculatorError("Invalid expression")
             else:
-                if x.startswith("-"):
+                if x not in self.assignments:
+                    raise CalculatorError(f"Unknown variable {x}")
+                elif x.startswith("-"):
                     return -self.assignments[x]
                 else:
                     return self.assignments[x]
+
+    def process_assignment(self, line: str):
+        key, value = line.replace(" ", "").split("=")
+        if self.valid_identifier(key):
+            self.assignments[key] = int(value)
+
+    def evaluate_expression(self, line):
+        expression = line.split()
+
+        if len(expression) == 1:
+            if self.valid_identifier(expression[0]):
+                expression[0] = self.processed_operand(expression[0])
+            else:
+                raise CalculatorError("Invalid identifier")
+
+        elif len(expression) == 2:
+            expression.insert(0, "0")
+
+        while len(expression) > 2:
+
+            operand_left = self.processed_operand(expression.pop(0))
+            operator = self.simplified_operator(expression.pop(0))
+            operand_right = self.processed_operand(expression.pop(0))
+
+            if operator == "-":
+                operand_right = -operand_right
+            expression.insert(0, sum((operand_left, operand_right)))
+
+        self.answer = int(expression.pop())
 
 
 def stage1():
@@ -121,6 +166,7 @@ def stage4():
 
 
 def stage5():
+    cal = Calculator()
     while True:
         usr_input = input().strip()
 
@@ -139,19 +185,16 @@ def stage5():
                 expression = usr_input.split()
 
                 if len(expression) == 1:
-                    if not valid_operand(expression[0]):
-                        raise InvalidExpressionError
+                    expression[0] = cal.processed_int(expression[0])
 
                 if len(expression) == 2:
                     expression.insert(0, "0")
 
                 while len(expression) > 2:
-                    if not valid_expression(*expression[:3]):
-                        raise InvalidExpressionError
 
-                    operand_left = int(expression.pop(0))
-                    operator = simplify_operator(expression.pop(0))
-                    operand_right = int(expression.pop(0))
+                    operand_left = cal.processed_int(expression[0])
+                    operator = cal.simplified_operator(expression.pop(0))
+                    operand_right = cal.processed_int(expression[0])
 
                     if operator == "-":
                         operand_right = -operand_right
@@ -159,70 +202,36 @@ def stage5():
 
                 print(int(expression.pop()))
 
-        except InvalidExpressionError:
-            print("Invalid expression")
+        except CalculatorError as err:
+            print(err)
 
 
 def stage6():
+    cal = Calculator()
     while True:
         usr_input = input().strip()
-
         try:
             if usr_input == "/exit":
                 print("Bye!")
                 exit()
-
             elif usr_input == "/help":
                 print("The program calculates the sum of numbers")
-
             elif usr_input.startswith("/"):
                 print("Unknown command")
-
             elif usr_input:
                 if "=" in usr_input:
-                    # def assignment
-                    assignments = {}
-                    print("assign")
-                    key, value = usr_input.replace(" ", "").split("=")
-                    if not key.isalpha():
-                        print("Invalid identifier")
-                        continue
-
-                    assignments[key] = value
-
-                    print(assignments)
-
+                    cal.process_assignment(usr_input)
                     continue
 
-                expression = usr_input.split()
+                cal.evaluate_expression(usr_input)
+                print(cal.answer)
 
-                if len(expression) == 1:
-                    if not valid_operand(expression[0]):
-                        raise InvalidExpressionError
-
-                if len(expression) == 2:
-                    expression.insert(0, "0")
-
-                while len(expression) > 2:
-                    if not valid_expression(*expression[:3]):
-                        raise InvalidExpressionError
-
-                    operand_left = int(expression.pop(0))
-                    operator = simplify_operator(expression.pop(0))
-                    operand_right = int(expression.pop(0))
-
-                    if operator == "-":
-                        operand_right = -operand_right
-                    expression.insert(0, sum((operand_left, operand_right)))
-
-                print(int(expression.pop()))
-
-        except InvalidExpressionError:
-            print("Invalid expression")
+        except CalculatorError as err:
+            print(err)
 
 
 def main():
-    stage6()
+    stage5()
 
 
 if __name__ == "__main__":
