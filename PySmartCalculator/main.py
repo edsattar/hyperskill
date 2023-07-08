@@ -1,3 +1,5 @@
+from collections import deque
+
 class CalculatorError(Exception):
     def __init__(self, message):
         self.message = message
@@ -82,6 +84,10 @@ class Calculator:
             expression.insert(0, sum((operand_left, operand_right)))
 
         self.answer = int(expression.pop())
+
+    def evaluate_postix(self, line):
+        a = deque(line.replace(" ", ""))
+        print(a)
 
 
 def stage1():
@@ -214,8 +220,33 @@ def stage6():
             print(err)
 
 
+def stage7():
+    cal = Calculator()
+    while True:
+        usr_input = input().strip()
+        try:
+            if usr_input == "/exit":
+                print("Bye!")
+                exit()
+            elif usr_input == "/help":
+                print("The program calculates the sum of numbers")
+            elif usr_input.startswith("/"):
+                print("Unknown command")
+            elif usr_input:
+                if "=" in usr_input:
+                    cal.process_assignment(usr_input)
+                    continue
+
+                # cal.evaluate_expression(usr_input)
+                # print(cal.answer)
+                cal.evaluate_postix(usr_input)
+
+        except CalculatorError as err:
+            print(err)
+
+
 def main():
-    stage6()
+    stage7()
 
 
 if __name__ == "__main__":
