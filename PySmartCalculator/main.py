@@ -1,5 +1,6 @@
 from collections import deque
 
+
 class CalculatorError(Exception):
     def __init__(self, message):
         self.message = message
@@ -12,6 +13,8 @@ class Calculator:
     def __init__(self) -> None:
         self.assignments: dict[str, int] = dict()
         self.answer: int = 0
+        self.ops: set[str] = {"+", "-", "*", "/", "^"}
+        self.paren: set[str] = {"(", ")"}
 
     def validated_assignment(self, x: str) -> int:
         try:
@@ -48,7 +51,7 @@ class Calculator:
             return int(x)
         except ValueError:
             if not x.lstrip("-").isalpha():
-                raise CalculatorError("Invalid expression")
+                raise CalculatorError(f"Invalid expression {x}")
             else:
                 if x not in self.assignments:
                     raise CalculatorError(f"Unknown variable {x}")
@@ -62,19 +65,22 @@ class Calculator:
         if len(operands) > 2:
             raise CalculatorError("Invalid assignment")
         key, value = line.replace(" ", "").split("=")
-        self.assignments[self.validated_identifier(key)] = self.validated_assignment(value)
+        self.assignments[self.validated_identifier(key)] = self.validated_assignment(
+            value
+        )
 
-    def evaluate_expression(self, line):
+    def evaluate_add_sub(self, line):
         expression = line.split()
 
         if len(expression) == 1:
-            expression[0] = self.processed_operand(self.validated_identifier(expression[0]))
+            expression[0] = self.processed_operand(
+                self.validated_identifier(expression[0])
+            )
 
         elif len(expression) == 2:
             expression.insert(0, "0")
 
         while len(expression) > 2:
-
             operand_left = self.processed_operand(expression.pop(0))
             operator = self.simplified_operator(expression.pop(0))
             operand_right = self.processed_operand(expression.pop(0))
@@ -85,9 +91,103 @@ class Calculator:
 
         self.answer = int(expression.pop())
 
-    def evaluate_postix(self, line):
-        a = deque(line.replace(" ", ""))
-        print(a)
+    def tokenize(self, line):
+        line = line.replace(" ", "")
+        tokens = deque()
+        loop = True
+        while loop:
+            loop = False
+            for ch in line:
+                if ch in "+-*/^()":
+                    a, b = line.split(ch, 1)
+                    if a:
+                        tokens.append(a)
+                        tokens.append(ch)
+                    else:
+                        if ch == '-':
+                            if not tokens:
+                                continue
+                            elif tokens[-1] == '-':
+                                tokens.pop()
+                                tokens.append('+')
+                            elif tokens[-1] == '+':
+                                tokens.pop()
+                                tokens.append('-')
+                            else:
+                                continue
+                        elif ch == '+':
+                            pass
+                        elif ch == '(':
+                            tokens.append(ch)
+                        elif ch == ')' and tokens and tokens[-1] == ')':
+                            tokens.append(ch)
+                        else:
+                            raise CalculatorError("Invalid expression - invalid operator")
+                    line = b
+                    loop = True
+                    break
+        else:
+            if line:
+                tokens.append(line)
+        return tokens
+
+    def infix_to_postfix(self, line):
+        priority = {"+": 0, "-": 0, "*": 1, "/": 1, "^": 2}
+        result = deque()
+        stack = deque()
+        expression = self.tokenize(line)
+        print(expression)
+        for e in expression:
+            if e in "+-*/^()":
+                if e == "(":
+                    stack.append(e)
+                    continue
+                # elif e == "-" and stack and stack[-1] == '(':
+                #     result.append(1)
+                #     stack.append("*")
+                #     continue
+                elif e == ")":
+                    try:
+                        while stack[-1] != "(":
+                            result.append(stack.pop())
+                        else:
+                            stack.pop()
+                        continue
+                    except IndexError:
+                        raise CalculatorError("Invalid expression - unmatched ')'")
+                while stack and stack[-1] != "(" and priority[e] <= priority[stack[-1]]:
+                    result.append(stack.pop())
+                stack.append(e)
+            else:
+                result.append(self.processed_operand(e))
+        if "(" in stack:
+            raise CalculatorError("Invalid expression - unclosed '('")
+        while stack:
+            result.append(stack.pop())
+        return result
+
+    def evaluate_expression(self, line):
+        operation = {"+": lambda a, b: a + b,
+                     "-": lambda a, b: a - b,
+                     "*": lambda a, b: a * b,
+                     "/": lambda a, b: a // b,
+                     "^": lambda a, b: a ** b}
+        stack = deque()
+        postfix = self.infix_to_postfix(line)
+        print(postfix)
+        while postfix:
+            x = postfix.popleft()
+            if x in operation:
+                # b assigned fisrt as values get
+                # extracted in reversed order with pop()
+                b = stack.pop()
+                a = stack.pop()
+                stack.append(operation[x](a, b))
+            else:
+                stack.append(x)
+            print(postfix)
+            print(stack)
+        self.answer = stack[0]
 
 
 def stage1():
@@ -181,7 +281,6 @@ def stage5():
                     expression.insert(0, "0")
 
                 while len(expression) > 2:
-
                     operand_left = cal.processed_int(expression.pop(0))
                     operator = cal.simplified_operator(expression.pop(0))
                     operand_right = cal.processed_int(expression.pop(0))
@@ -213,7 +312,7 @@ def stage6():
                     cal.process_assignment(usr_input)
                     continue
 
-                cal.evaluate_expression(usr_input)
+                cal.evaluate_add_sub(usr_input)
                 print(cal.answer)
 
         except CalculatorError as err:
@@ -237,9 +336,8 @@ def stage7():
                     cal.process_assignment(usr_input)
                     continue
 
-                # cal.evaluate_expression(usr_input)
-                # print(cal.answer)
-                cal.evaluate_postix(usr_input)
+                cal.evaluate_expression(usr_input)
+                print(cal.answer)
 
         except CalculatorError as err:
             print(err)
