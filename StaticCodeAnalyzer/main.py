@@ -102,6 +102,7 @@ class PythonCodeAnalyzer:
         """S001 Check if the line length is greater than 80 characters."""
         if len(line) >= 80:
             return "S001 Line length is greater than 79 characters"
+        return None
 
     def check_indentation(self, code: str) -> str | None:
         """S002 Check if the indentation is NOT a multiple of four."""
@@ -114,11 +115,13 @@ class PythonCodeAnalyzer:
 
         if 0 < spaces < 4 or spaces % 4 != 0:
             return "S002 Indentation is a multiple of four"
+        return None
 
     def check_unnecessary_semicolon(self, code: str) -> str | None:
         """S003 Check if there is an unnecessary semicolon after a statement."""
         if code.rstrip().endswith(";"):
             return "S003 Unnecessary semicolon after a statement"
+        return None
 
     def check_inline_comment_spacing(self, code: str, comment: str) -> str | None:
         """S004 Check if there are less than two spaces before inline comments."""
@@ -129,11 +132,13 @@ class PythonCodeAnalyzer:
         # Check if there are less than two spaces before inline comments
         elif len(code) - len(code.rstrip(" ")) < 2:
             return "S004 Less than two spaces before inline comment"
+        return None
 
     def check_todo_found(self, comment: str) -> str | None:
         """Check if 'TODO' is found in comments (case-insensitive)."""
         if "TODO" in comment.upper():
             return "S005 TODO found"
+        return None
 
     def check_blank_lines(self, line: str) -> str | None:
         """Check if there are more than two blank lines preceding a code line."""
@@ -201,6 +206,7 @@ class PythonCodeAnalyzer:
         for arg in node.args.defaults:
             if isinstance(arg, mutable_types):
                 return f"Line {node.lineno:02}: S012 Default argument value is mutable"
+        return None
 
     def process_with_ast(self, file_path: str) -> list[str]:
         """Process with help of python ast module"""
