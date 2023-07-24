@@ -1,5 +1,83 @@
 #! /usr/bin/env bash
 
+file_opt_menu(){
+local menu="
+---------------------------------------------------------------------
+| 0 Back | 1 Delete | 2 Rename | 3 Make writable | 4 Make read-only |
+---------------------------------------------------------------------"
+    while true; do
+        echo -e "$menu"
+        local opt
+        read -r opt
+        if [ $opt = "0" ]; then # back
+            break
+        elif [ $opt = "1" ]; then # delete
+            rm $1
+            echo "$1 has been deleted."
+            break
+
+        elif [ $opt = "2" ]; then # rename
+            echo "Enter the new file name:"
+            local new_name
+            read -r new_name
+            mv $1 $new_name
+            echo "$1 has been renamed as $new_name"
+            break
+
+        elif [ $opt = "3" ]; then # make writable
+            chmod 666 $1
+            echo "Permissions have been updated."
+            ls -l $1
+            break
+
+        elif [ $opt = "4" ]; then # make read-only
+            chmod 664 $1
+            echo "Permissions have been updated."
+            ls -l $1
+            break
+        fi
+    done
+}
+
+list_dir_contents(){
+    local arr=(*)
+    for item in "${arr[@]}"; do
+      if [[ -f "$item" ]]; then
+        echo "F $item"
+      elif [[ -d "$item" ]]; then
+        echo "D $item"
+      fi
+    done
+}
+
+directory_menu(){
+local menu="
+---------------------------------------------------
+| 0 Main menu | 'up' To parent | 'name' To select |
+---------------------------------------------------"
+    local opt
+    while true; do
+        echo -e "\nThe list of files and directories:"
+        list_dir_contents
+        echo -e "$menu"
+        read -r opt
+        if [ $opt = '0' ]; then # main menu
+            break
+        elif [ $opt = 'up' ]; then # up one dir
+            cd ..
+        else # file options
+            if [ -f "$opt" ]; then
+                file_opt_menu $opt
+            elif [ -d "$opt" ]; then
+                cd "$opt"
+            else
+                echo "Invalid input!"
+            fi
+        fi
+    done
+}
+
+stage6(){
 menu="
 ------------------------------
 | Hyper Commander            |
@@ -10,105 +88,6 @@ menu="
 | 4: Find Executables        |
 ------------------------------"
 
-list_fldr(){
-    local arr=(*)
-    for item in "${arr[@]}"; do
-      if [[ -f "$item" ]]; then
-        echo "F $item"
-      elif [[ -d "$item" ]]; then
-        echo "D $item"
-      fi
-      # echo "do another thing"
-    done
-}
-
-
-display_file_menu(){
-local menu="
----------------------------------------------------
-| 0 Main menu | 'up' To parent | 'name' To select |
----------------------------------------------------"
-    local first=""
-    local rest
-
-    while true; do
-        echo "The list of files and directories:"
-        # find -type f -printf "F %f\n" -o -type d -printf "D %f\n" 
-        list_fldr
-        echo -e "$menu"
-        # escape_char=$(printf "\u1b")
-        # read -rsn1 first # get 1 character
-        # if [[ $first == $(printf "\u1b") ]]; then
-        #     read -rsn2 rest # read 2 more chars
-        #     if [[ $rest == "[A" ]]; then
-        #         echo "Not implemented!"
-        #     else
-        #         echo "Invalid input!"
-        #     fi
-        # elif [[ $first == '0' ]]; then 
-        #     break
-        read -r rest
-        if [ $rest = '0' ]; then 
-            break
-        elif [ $rest = 'up' ]; then
-            cd ..
-        else
-            # read -r rest
-            local search_term="$first$rest"
-            if [ -f "$search_term" ]; then
-                echo "Not implemented!"
-            elif [ -d "$search_term" ]; then
-                cd "$search_term"
-            else
-                echo "Invalid input!"
-            fi
-        fi
-    done
-}
-
-stage1(){
-    while true; do
-        echo -e "$menu"
-        read -r opt
-        if [ $opt -eq 0 ]; then
-            echo "Farewell!"
-            break
-        elif [ $opt -eq 1 ]; then
-            echo "Not implemented!"
-        elif [ $opt -eq 2 ]; then
-            echo "Not implemented!"
-        elif [ $opt -eq 3 ]; then
-            echo "Not implemented!"
-        elif [ $opt -eq 4 ]; then
-            echo "Not implemented!"
-        else
-            echo "Invalid option!"
-        fi
-    done
-}
-
-stage2(){
-    while true; do
-        echo -e "$menu"
-        read -r opt
-        if [ $opt -eq 0 ]; then
-            echo "Farewell!"
-            break
-        elif [ $opt -eq 1 ]; then
-            uname -no
-        elif [ $opt -eq 2 ]; then
-            whoami
-        elif [ $opt -eq 3 ]; then
-            echo "Not implemented!"
-        elif [ $opt -eq 4 ]; then
-            echo "Not implemented!"
-        else
-            echo "Invalid option!"
-        fi
-    done
-}
-
-stage3(){
     while true; do
         echo -e "$menu"
         read -r opt
@@ -120,9 +99,23 @@ stage3(){
         elif [ $opt -eq 2 ]; then # User info
             whoami
         elif [ $opt -eq 3 ]; then # File and Dir operations
-            display_file_menu
+            directory_menu
         elif [ $opt -eq 4 ]; then # Find Executables
-            echo "Not implemented!"
+            local executable
+            local exe_location
+            echo "Enter an executable name:"
+            read -r executable
+            exe_location=$(which $executable)
+            local exit_status=$?
+            if [ $exit_status = 1 ]; then # not found
+                echo "The executable with that name does not exist!"
+            elif [ $exit_status = 0 ]; then # found
+                echo "Located in: $exe_location"
+                local args
+                echo "Enter arguments:"
+                read -r args
+                $executable $args
+            fi
         else
             echo "Invalid option!"
         fi
@@ -130,6 +123,5 @@ stage3(){
 }
 
 echo "Hello $USER!"
-# stage3
-# display_file_menu
+stage6
 
